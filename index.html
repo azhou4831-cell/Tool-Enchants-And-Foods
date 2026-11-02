@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Command Forge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1c2527;--panel:#263235;--well:#151d1f;--line:#3a4a4d;--text:#e6efe9;--mute:#9db0aa;--gold:#f2c14e;--lapis:#6b92ff;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,"Segoe UI",Roboto,sans-serif}
+h1,h2,.tab,legend{font-family:"Pixelify Sans",ui-monospace,Consolas,monospace;font-weight:700}
+header{max-width:1100px;margin:0 auto;padding:36px 20px 20px}
+h1{margin:0 0 6px;font-size:44px;line-height:1.1;color:var(--gold)}
+h2{margin:0;font-size:20px}
+header p{margin:0;color:var(--mute);max-width:56ch}
+main{max-width:1100px;margin:0 auto;padding:0 20px 48px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:24px;align-items:start}
+.tabs{display:flex;gap:4px;margin-bottom:-1px}
+.tab{background:var(--bg);color:var(--mute);border:1px solid var(--line);border-bottom:0;padding:8px 20px;font-size:17px;cursor:pointer;border-radius:3px 3px 0 0}
+.tab.on{background:var(--panel);color:var(--text)}
+.pane{background:var(--panel);border:1px solid var(--line);padding:20px;display:grid;gap:18px}
+fieldset{border:1px solid var(--line);margin:0;padding:12px 14px 14px;min-width:0}
+legend{padding:0 6px;font-size:16px}
+label{display:grid;gap:4px;color:var(--mute);font-size:13px}
+label.ck{display:flex;align-items:center;gap:8px;color:var(--text);font-size:14px}
+input,select,textarea,button{font:inherit;color:var(--text)}
+input:not([type=checkbox]),select{width:100%;background:var(--well);border:1px solid var(--line);border-radius:2px;padding:7px 8px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end}
+.ench{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px;max-height:300px;overflow:auto;padding-right:4px}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;align-items:center}
+.row>*{flex:1 1 90px;min-width:0}
+.row>.x,.row>.ck{flex:0 0 auto}
+.x{width:36px;height:36px;background:var(--well);border:1px solid var(--line);border-radius:2px;cursor:pointer;font-size:18px}
+.add{background:none;border:1px dashed var(--mute);border-radius:2px;padding:7px 12px;cursor:pointer}
+.note{margin:0 0 10px;color:var(--mute);font-size:13px}
+.out{position:sticky;top:16px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);padding:18px;display:grid;gap:12px}
+#cmd{width:100%;min-height:210px;resize:vertical;background:var(--well);border:1px solid var(--line);padding:10px;font:13px/1.5 ui-monospace,Consolas,monospace;color:var(--gold);word-break:break-all}
+.bar{display:flex;gap:12px;align-items:center}
+#copy{background:var(--gold);color:#1c2527;border:0;padding:9px 16px;font-weight:700;border-radius:2px;cursor:pointer}
+#len{color:var(--mute);font-size:13px}
+.out .note{margin:0}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--lapis);outline-offset:2px}
+.look{margin-top:18px;background:var(--panel);display:grid;gap:12px}
+#lore,#cRaw{width:100%;background:var(--well);border:1px solid var(--line);border-radius:2px;padding:7px 8px;resize:vertical}
+.cp{display:flex;gap:6px}
+.cp select{flex:1}
+.cp input[type=color]{width:44px;height:36px;padding:2px;flex:0 0 44px}
+.w{color:var(--gold);cursor:help}
+@media(max-width:880px){main{grid-template-columns:1fr}.out{position:static}h1{font-size:34px}}
+</style>
+</head>
+<body>
+<header>
+<h1>Command Forge</h1>
+<p>Build Minecraft /give commands with custom enchantments, stats and food.</p>
+</header>
+<main>
+<section>
+<nav class="tabs"><button class="tab on" data-t="gear" type="button">Gear</button><button class="tab" data-t="food" type="button">Food</button></nav>
+
+<div class="pane" id="gear">
+<div class="g">
+<label>Item<input id="gItem" list="items" value="netherite_sword"></label>
+<label>Name<input id="gName" placeholder="optional"></label>
+</div>
+<div class="g">
+<label>Attack damage<input id="gDmg" type="number" step="any" min="0" placeholder="unchanged"></label>
+<label>Attack speed<input id="gSpd" type="number" step="any" min="0" placeholder="unchanged"></label>
+<label>Durability<input id="gDur" type="number" min="1" placeholder="unchanged"></label>
+<label class="ck"><input id="gUnb" type="checkbox">Unbreakable</label>
+</div>
+<p class="note">Setting damage or speed replaces the item's built-in values, so fill in both for a weapon. Damage is the total shown in the tooltip.</p>
+<fieldset><legend>Enchantments</legend>
+<input id="eFilter" placeholder="Filter enchantments" aria-label="Filter enchantments">
+<div class="ench" id="ench"></div>
+</fieldset>
+<fieldset><legend>Extra stats</legend>
+<p class="note">Each row is a stat, an amount, how it applies, and the slot it works in.</p>
+<div id="attrs"></div>
+<button class="add" id="addA" type="button">Add stat</button>
+</fieldset>
+</div>
+
+<div class="pane" id="food" hidden>
+<div class="g">
+<label>Item<input id="fItem" list="items" value="cooked_beef"></label>
+<label>Name<input id="fName" placeholder="optional"></label>
+</div>
+<div class="g">
+<label>Nutrition<input id="fNut" type="number" min="0" value="8"></label>
+<label>Saturation<input id="fSat" type="number" step="any" min="0" value="12.8"></label>
+<label>Eat time (seconds)<input id="fEat" type="number" step="any" min="0" value="1.6"></label>
+<label>Animation<select id="fAni"><option value="eat">eat</option><option value="drink">drink</option><option value="none">none</option></select></label>
+<label class="ck"><input id="fAlw" type="checkbox">Always edible</label>
+</div>
+<fieldset><legend>Effects</legend>
+<p class="note">Each row is an effect, its level, how many seconds it lasts, and the chance it applies.</p>
+<div id="fx"></div>
+<button class="add" id="addF" type="button">Add effect</button>
+</fieldset>
+</div>
+
+<fieldset class="look"><legend>Name and lore</legend>
+<div class="g">
+<label>Name color<span class="cp"><select id="nCol"></select><input id="nHex" type="color" value="#ff5555" aria-label="Custom color"></span></label>
+<label class="ck"><input id="s_bold" type="checkbox">Bold</label>
+<label class="ck"><input id="s_italic" type="checkbox">Italic</label>
+<label class="ck"><input id="s_underlined" type="checkbox">Underline</label>
+<label class="ck"><input id="s_strikethrough" type="checkbox">Strikethrough</label>
+<label class="ck"><input id="s_obfuscated" type="checkbox">Obfuscated</label>
+</div>
+<label>Lore, one line per row<textarea id="lore" rows="3" placeholder="Leave empty for no lore"></textarea></label>
+<div class="g">
+<label>Lore color<span class="cp"><select id="lCol"></select><input id="lHex" type="color" value="#aaaaaa" aria-label="Custom color"></span></label>
+<label class="ck"><input id="lIt" type="checkbox">Italic lore</label>
+</div>
+</fieldset>
+
+<fieldset class="look"><legend>Death protection</legend>
+<div class="g">
+<label class="ck"><input id="dpOn" type="checkbox">Survive death like a totem</label>
+<label class="ck"><input id="dpClr" type="checkbox" checked>Clear effects first</label>
+</div>
+<p class="note">Effects applied when it saves you. Each row is an effect, its level, how many seconds it lasts, and the chance it applies.</p>
+<div id="dp"></div>
+<div class="bar"><button class="add" id="addD" type="button">Add effect</button><button class="add" id="dpPre" type="button">Use totem effects</button></div>
+</fieldset>
+
+<fieldset class="look"><legend>More components</legend>
+<div class="g">
+<label>Rarity<select id="cRar"><option value="">default</option><option>common</option><option>uncommon</option><option>rare</option><option>epic</option></select></label>
+<label>Enchant glint<select id="cGl"><option value="">default</option><option value="true">always on</option><option value="false">always off</option></select></label>
+<label>Max stack size<input id="cStk" type="number" min="1" max="99" placeholder="default"></label>
+<label>Use cooldown (seconds)<input id="cCd" type="number" min="0" step="any" placeholder="none"></label>
+<label>Damage resistance<select id="cRes"><option value="">none</option><option value="#minecraft:is_fire">fire</option><option value="#minecraft:is_explosion">explosions</option><option value="#minecraft:is_projectile">projectiles</option></select></label>
+<label>Equip slot<select id="cEq"><option value="">none</option><option>head</option><option>chest</option><option>legs</option><option>feet</option><option>mainhand</option><option>offhand</option><option>body</option></select></label>
+<label>Item model<input id="cMod" placeholder="e.g. totem_of_undying"></label>
+<label>Custom data<input id="cDat" placeholder="{owner:1b}"></label>
+</div>
+<div class="g">
+<label class="ck"><input id="cGld" type="checkbox">Glider (needs an equip slot)</label>
+<label class="ck"><input id="cHide" type="checkbox">Hide tooltip</label>
+</div>
+<label>Other components, one per line<textarea id="cRaw" rows="3" placeholder="tool={default_mining_speed:5}"></textarea></label>
+</fieldset>
+</section>
+
+<aside class="out">
+<h2>Command</h2>
+<div class="g">
+<label>Give to<input id="who" value="@s"></label>
+<label>Count<input id="cnt" type="number" min="1" max="64" value="1"></label>
+</div>
+<textarea id="cmd" readonly aria-label="Generated command"></textarea>
+<div class="bar"><button id="copy" type="button">Copy command</button><span id="len"></span></div>
+<p class="note" id="wmsg" hidden></p>
+<p class="note">Java Edition 1.21.5 and newer. If chat cuts a long command off, run it from a command block.</p>
+</aside>
+</main>
+<datalist id="items"></datalist>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const nice=s=>s.replace(/_/g," "),opts=a=>a.map(v=>`<option value="${v}">${nice(v)}</option>`).join("");
+const q=JSON.stringify,n=x=>+(+x).toFixed(4);
+
+const gear=[];
+["wooden","stone","iron","golden","diamond","netherite"].forEach(t=>["sword","axe","pickaxe","shovel","hoe"].forEach(k=>gear.push(`${t}_${k}`)));
+["leather","chainmail","iron","golden","diamond","netherite"].forEach(m=>["helmet","chestplate","leggings","boots"].forEach(p=>gear.push(`${m}_${p}`)));
+gear.push("bow","crossbow","trident","mace","shield","elytra","turtle_helmet","fishing_rod","shears","flint_and_steel","stick","totem_of_undying");
+const food=["apple","golden_apple","enchanted_golden_apple","bread","cooked_beef","cooked_porkchop","cooked_chicken","cooked_salmon","carrot","golden_carrot","baked_potato","cookie","pumpkin_pie","melon_slice","sweet_berries","dried_kelp","honey_bottle","rotten_flesh","suspicious_stew","beetroot_soup","mushroom_stew"];
+const E={sharpness:[5,"sword axe"],smite:[5,"sword axe mace"],bane_of_arthropods:[5,"sword axe mace"],knockback:[2,"sword"],fire_aspect:[2,"sword mace"],looting:[3,"sword"],sweeping_edge:[3,"sword"],efficiency:[5,"axe pickaxe shovel hoe shears"],silk_touch:[1,"axe pickaxe shovel hoe"],fortune:[3,"axe pickaxe shovel hoe"],unbreaking:[3,"damageable"],mending:[1,"damageable"],protection:[4,"armor"],fire_protection:[4,"armor"],blast_protection:[4,"armor"],projectile_protection:[4,"armor"],feather_falling:[4,"boots"],respiration:[3,"helmet"],aqua_affinity:[1,"helmet"],thorns:[3,"armor"],depth_strider:[3,"boots"],frost_walker:[2,"boots"],soul_speed:[3,"boots"],swift_sneaking:[3,"leggings"],power:[5,"bow"],punch:[2,"bow"],flame:[1,"bow"],infinity:[1,"bow"],multishot:[1,"crossbow"],quick_charge:[3,"crossbow"],piercing:[4,"crossbow"],loyalty:[3,"trident"],impaling:[5,"trident"],riptide:[3,"trident"],channeling:[1,"trident"],luck_of_the_sea:[3,"fishing_rod"],lure:[3,"fishing_rod"],density:[5,"mace"],breach:[4,"mace"],wind_burst:[3,"mace"],binding_curse:[1,"armor elytra"],vanishing_curse:[1,"damageable"]};
+const ENCH=Object.keys(E);
+const COLS=["default","black","dark_blue","dark_green","dark_aqua","dark_red","dark_purple","gold","gray","dark_gray","blue","green","aqua","red","light_purple","yellow","white","custom"];
+const ATTR=["attack_damage","attack_speed","attack_knockback","armor","armor_toughness","knockback_resistance","max_health","movement_speed","luck","block_interaction_range","entity_interaction_range","step_height","jump_strength","gravity","safe_fall_distance","fall_damage_multiplier","scale","mining_efficiency","sneaking_speed","submerged_mining_speed"];
+const SLOT=["any","mainhand","offhand","hand","head","chest","legs","feet","armor","body"];
+const FX=["speed","slowness","haste","mining_fatigue","strength","instant_health","instant_damage","jump_boost","nausea","regeneration","resistance","fire_resistance","water_breathing","invisibility","blindness","night_vision","hunger","weakness","poison","wither","health_boost","absorption","saturation","glowing","levitation","luck","unluck","slow_falling","conduit_power","dolphins_grace","darkness","infested","oozing","weaving","wind_charged"];
+
+$("#items").innerHTML=[...gear,...food].map(v=>`<option value="${v}">`).join("");
+$("#ench").innerHTML=ENCH.map(e=>`<label><span>${nice(e)} <b class="w" hidden>⚠</b></span><input type="number" min="0" max="255" data-e="${e}" placeholder="0"></label>`).join("");
+
+function row(html){const d=document.createElement("div");d.className="row";d.innerHTML=html;return d}
+function addAttr(){
+  $("#attrs").append(row(`<select class="a" aria-label="Stat">${opts(ATTR)}</select><input class="v" type="number" step="any" value="1" title="Amount" aria-label="Amount"><select class="o" aria-label="How it applies"><option value="add_value">add</option><option value="add_multiplied_base">multiply base</option><option value="add_multiplied_total">multiply total</option></select><select class="s" aria-label="Slot">${opts(SLOT)}</select><button class="x" type="button" aria-label="Remove stat">×</button>`));
+  build();
+}
+function addFx(sel="#fx",v){
+  const r=row(`<select class="e" aria-label="Effect">${opts(FX)}</select><input class="l" type="number" min="1" max="256" value="1" title="Level" aria-label="Level"><input class="t" type="number" min="1" step="any" value="30" title="Seconds" aria-label="Seconds"><input class="p" type="number" min="0" max="100" value="100" title="Chance in percent" aria-label="Chance in percent"><label class="ck"><input class="i" type="checkbox">infinite</label><button class="x" type="button" aria-label="Remove effect">×</button>`);
+  $(sel).append(r);
+  if(v){$(".e",r).value=v[0];$(".l",r).value=v[1];$(".t",r).value=v[2]}
+  build();
+}
+
+const colp=(sel,hex)=>{const v=$(sel).value;return v==="default"?[]:[`color:"${v==="custom"?$(hex).value:v}"`]};
+function nameC(t){
+  const p=[...colp("#nCol","#nHex"),...["bold","italic","underlined","strikethrough","obfuscated"].filter(x=>$("#s_"+x).checked).map(x=>x+":true")];
+  return p.length?`{text:${q(t)},${p.join(",")}}`:q(t);
+}
+function loreC(){
+  if($("#lore").value.trim()==="")return[];
+  const p=[...colp("#lCol","#lHex"),`italic:${$("#lIt").checked}`];
+  return[`lore=[${$("#lore").value.split("\n").map(l=>`{text:${q(l)},${p.join(",")}}`).join(",")}]`];
+}
+function kinds(id){
+  const s=new Set(),a=["helmet","chestplate","leggings","boots"];
+  [...a,"sword","axe","pickaxe","shovel","hoe"].forEach(k=>{if(id===k||id.endsWith("_"+k)){s.add(k);if(a.includes(k))s.add("armor")}});
+  ["bow","crossbow","trident","mace","shield","elytra","fishing_rod","shears","flint_and_steel","carrot_on_a_stick"].forEach(k=>{if(id===k)s.add(k)});
+  if(s.size)s.add("damageable");
+  return s;
+}
+function warn(){
+  const k=kinds($("#gItem").value.trim().replace(/^minecraft:/,"")),w=[];
+  $$("[data-e]").forEach(i=>{
+    const [max,ok]=E[i.dataset.e],lv=+i.value;let m="";
+    if(lv>0){
+      if(lv>max)m=`Level ${lv} is above the vanilla max of ${max}.`;
+      if(!ok.split(" ").some(x=>k.has(x)))m+=(m?" ":"")+"Not normally found on this item.";
+    }
+    const b=$(".w",i.parentElement);b.hidden=!m;b.title=m;
+    if(m)w.push(nice(i.dataset.e));
+  });
+  const o=$("#wmsg"),on=$(".tab.on").dataset.t==="gear"&&w.length>0;
+  o.hidden=!on;o.textContent=on?`⚠ ${w.join(", ")} go beyond vanilla. The command still includes them.`:"";
+}
+function fxList(sel){
+  return $$(sel+" .row").map(r=>{
+    const amp=Math.min(255,Math.max(0,Math.floor($(".l",r).value||1)-1));
+    const dur=$(".i",r).checked?-1:Math.max(1,Math.round(($(".t",r).value||1)*20));
+    const p=Math.max(0,Math.min(100,+$(".p",r).value||0))/100;
+    return `{type:"apply_effects",effects:[{id:"minecraft:${$(".e",r).value}",amplifier:${amp},duration:${dur}}],probability:${n(p)}}`;
+  });
+}
+function extraParts(){
+  const c=[],v=id=>$(id).value.trim();
+  if($("#dpOn").checked){
+    const ev=[...($("#dpClr").checked?['{type:"clear_all_effects"}']:[]),...fxList("#dp")];
+    c.push(`death_protection=${ev.length?`{death_effects:[${ev.join(",")}]}`:"{}"}`);
+  }
+  if(v("#cRar"))c.push(`rarity="${v("#cRar")}"`);
+  if(v("#cGl"))c.push(`enchantment_glint_override=${v("#cGl")}`);
+  if(v("#cStk")!=="")c.push(`max_stack_size=${Math.min(99,Math.max(1,Math.floor(v("#cStk"))))}`);
+  if(v("#cCd")!=="")c.push(`use_cooldown={seconds:${n(v("#cCd"))}}`);
+  if(v("#cRes"))c.push(`damage_resistant={types:"${v("#cRes")}"}`);
+  if(v("#cEq"))c.push(`equippable={slot:"${v("#cEq")}"}`);
+  if($("#cGld").checked)c.push("glider={}");
+  if(v("#cMod"))c.push(`item_model="${v("#cMod").includes(":")?v("#cMod"):"minecraft:"+v("#cMod")}"`);
+  if(v("#cDat")){const d=v("#cDat");c.push(`custom_data=${d.startsWith("{")?d:`{${d}}`}`)}
+  if($("#cHide").checked)c.push("tooltip_display={hide_tooltip:true}");
+  $("#cRaw").value.split("\n").map(l=>l.trim().replace(/,$/,"")).filter(Boolean).forEach(l=>c.push(l));
+  return c;
+}
+function mod(a,id,amt,op,slot){return `{type:"minecraft:${a}",id:"${id}",amount:${n(amt)},operation:"${op}",slot:"${slot}"}`}
+
+function gearParts(){
+  const c=[],name=$("#gName").value.trim();
+  if(name)c.push(`item_name=${nameC(name)}`);
+  c.push(...loreC());
+  const en=$$("[data-e]").filter(i=>+i.value>0).map(i=>`"minecraft:${i.dataset.e}":${Math.min(255,Math.floor(i.value))}`);
+  if(en.length)c.push(`enchantments={${en.join(",")}}`);
+  const m=[],d=$("#gDmg").value,s=$("#gSpd").value;
+  if(d!=="")m.push(mod("attack_damage","minecraft:base_attack_damage",d-1,"add_value","mainhand"));
+  if(s!=="")m.push(mod("attack_speed","minecraft:base_attack_speed",s-4,"add_value","mainhand"));
+  $$("#attrs .row").forEach((r,i)=>m.push(mod($(".a",r).value,`forge:stat_${i}`,$(".v",r).value||0,$(".o",r).value,$(".s",r).value)));
+  if(m.length)c.push(`attribute_modifiers=[${m.join(",")}]`);
+  if($("#gUnb").checked)c.push("unbreakable={}");
+  const u=$("#gDur").value;
+  if(u!=="")c.push(`max_damage=${Math.max(1,Math.floor(u))}`);
+  return c;
+}
+
+function foodParts(){
+  const c=[],name=$("#fName").value.trim();
+  if(name)c.push(`item_name=${nameC(name)}`);
+  c.push(...loreC());
+  c.push(`food={nutrition:${Math.max(0,Math.floor($("#fNut").value)||0)},saturation:${n($("#fSat").value||0)}${$("#fAlw").checked?",can_always_eat:true":""}}`);
+  const ev=fxList("#fx");
+  c.push(`consumable={consume_seconds:${n($("#fEat").value||0)},animation:"${$("#fAni").value}"${ev.length?`,on_consume_effects:[${ev.join(",")}]`:""}}`);
+  return c;
+}
+
+function build(){
+  const t=$(".tab.on").dataset.t,c=[...(t==="gear"?gearParts():foodParts()),...extraParts()];
+  const id=($(t==="gear"?"#gItem":"#fItem").value.trim().replace(/^minecraft:/,""))||"stick";
+  const cnt=Math.max(1,Math.min(64,Math.floor($("#cnt").value)||1));
+  const cmd=`/give ${$("#who").value.trim()||"@s"} minecraft:${id}${c.length?`[${c.join(",")}]`:""}${cnt>1?" "+cnt:""}`;
+  $("#cmd").value=cmd;
+  $("#len").textContent=cmd.length+" characters";
+  warn();
+}
+
+$$(".tab").forEach(b=>b.onclick=()=>{
+  $$(".tab").forEach(x=>x.classList.toggle("on",x===b));
+  $$(".pane").forEach(p=>p.hidden=p.id!==b.dataset.t);
+  build();
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="nHex")$("#nCol").value="custom";
+  if(e.target.id==="lHex")$("#lCol").value="custom";
+  if(e.target.id==="eFilter"){const f=e.target.value.toLowerCase();$$("#ench label").forEach(l=>l.hidden=!l.textContent.toLowerCase().includes(f))}
+  build();
+});
+document.addEventListener("click",e=>{const x=e.target.closest(".x");if(x){x.parentElement.remove();build()}});
+$("#addA").onclick=addAttr;
+$("#addF").onclick=()=>addFx("#fx");
+$("#addD").onclick=()=>addFx("#dp");
+$("#dpPre").onclick=()=>{$("#dpOn").checked=true;$("#dp").innerHTML="";[["regeneration",2,45],["absorption",2,5],["fire_resistance",1,40]].forEach(v=>addFx("#dp",v))};
+$("#copy").onclick=async()=>{
+  const b=$("#copy");
+  try{await navigator.clipboard.writeText($("#cmd").value)}catch{$("#cmd").select();document.execCommand("copy")}
+  b.textContent="Copied";setTimeout(()=>b.textContent="Copy command",1500);
+};
+$("#nCol").innerHTML=$("#lCol").innerHTML=opts(COLS);
+addFx();
+</script>
+</body>
+</html>
